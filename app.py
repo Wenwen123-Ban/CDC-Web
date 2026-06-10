@@ -1,65 +1,32 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import json, os, time
+from functools import wraps
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-cdw-portal-secret-key')
+app.secret_key = 'cdw-nmscst-2025'  # temporary, move to env var later
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'Data', 'data.json')
 
-
-PUBLIC_NAV = [
-    {'key': 'home', 'label': 'Home', 'icon': '🏠', 'href': '/main'},
-    {'key': 'lookup', 'label': 'Child Status Lookup', 'icon': '🔍', 'href': '/lookup'},
-    {'key': 'announcements', 'label': 'Announcements', 'icon': '📢', 'href': '/announcements'},
-]
-
-ADMIN_NAV = [
-    {'key': 'dashboard', 'label': 'Dashboard', 'icon': '📊', 'href': '/admin/dashboard'},
-    {'key': 'children', 'label': 'Children Database', 'icon': '👶', 'href': '/admin/children'},
-    {'key': 'parents', 'label': 'Parent Database', 'icon': '👨‍👩‍👧', 'href': '/admin/parents'},
-    {'key': 'clearance', 'label': 'Enrollment Clearance', 'icon': '✅', 'href': '/admin/clearance'},
-    {'key': 'feeding', 'label': 'Feeding Program', 'icon': '🍱', 'href': '/admin/feeding'},
-    {'key': 'assessment', 'label': 'Nutritional Assessment', 'icon': '📋', 'href': '/admin/assessment'},
-    {'key': 'announce_admin', 'label': 'Announcements Manager', 'icon': '📣', 'href': '/admin/announce'},
-]
-
-PAGES = {
-    'home': {'title': 'Home', 'icon': '🏠', 'access': 'Public'},
-    'lookup': {'title': 'Child Status Lookup', 'icon': '🔍', 'access': 'Public'},
-    'announcements': {'title': 'Announcements', 'icon': '📢', 'access': 'Public'},
-    'dashboard': {'title': 'Dashboard', 'icon': '📊', 'access': 'Admin-only'},
-    'children': {'title': 'Children Database', 'icon': '👶', 'access': 'Admin-only'},
-    'parents': {'title': 'Parent Database', 'icon': '👨‍👩‍👧', 'access': 'Admin-only'},
-    'clearance': {'title': 'Enrollment Clearance', 'icon': '✅', 'access': 'Admin-only'},
-    'feeding': {'title': 'Feeding Program', 'icon': '🍱', 'access': 'Admin-only'},
-    'announce_admin': {'title': 'Announcements Manager', 'icon': '📣', 'access': 'Admin-only'},
-    'login': {'title': 'Admin Login', 'icon': '🔐', 'access': 'Public'},
-}
-
-ADMIN_USERNAME = 'admin'
-ADMIN_PASSWORD = 'cdw2025'  # Temporary hardcoded credential; replace with database-backed auth later.
+ADMIN_USER = 'admin'
+ADMIN_PASS = 'cdw2025'
 
 
-def is_admin_logged_in():
-    return session.get('admin') is True
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('is_admin'):
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated
 
 
-def render_shell(page_key, view_type='placeholder', error=None):
+def render_main(page, is_admin=None, login_error=''):
     return render_template(
         'main.html',
-        page=PAGES[page_key],
-        active_page=page_key,
-        view_type=view_type,
-        public_nav=PUBLIC_NAV,
-        admin_nav=ADMIN_NAV,
-        is_admin=is_admin_logged_in(),
-        error=error,
+        page=page,
+        is_admin=session.get('is_admin', False) if is_admin is None else is_admin,
+        login_error=login_error,
     )
 
-
-def require_admin():
-    if not is_admin_logged_in():
-        return redirect(url_for('admin_login'))
-    return None
 
 def load_data():
     if not os.path.exists(DATA_FILE):
@@ -68,92 +35,90 @@ def load_data():
     with open(DATA_FILE, 'r') as f:
         return json.load(f)
 
+
 def save_data(records):
     with open(DATA_FILE, 'w') as f:
         json.dump(records, f, indent=2)
 
 
-
 @app.route('/main')
 def main_home():
-    return render_shell('home', view_type='home')
+    return render_main('home')
+
 
 @app.route('/lookup')
 def lookup():
-    return render_shell('lookup')
+    return render_main('lookup')
+
 
 @app.route('/announcements')
 def announcements():
-    return render_shell('announcements')
+    return render_main('announcements')
+
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    return render_main('dashboard', is_admin=True)
+
+
+@app.route('/admin/children')
+@admin_required
+def admin_children():
+    return render_main('children', is_admin=True)
+
+
+@app.route('/admin/parents')
+@admin_required
+def admin_parents():
+    return render_main('parents', is_admin=True)
+
+
+@app.route('/admin/clearance')
+@admin_required
+def admin_clearance():
+    return render_main('clearance', is_admin=True)
+
+
+@app.route('/admin/feeding')
+@admin_required
+def admin_feeding():
+    return render_main('feeding', is_admin=True)
+
+
+@app.route('/admin/assessment')
+@admin_required
+def admin_assessment():
+    return redirect(url_for('index'))
+
+
+@app.route('/admin/announce')
+@admin_required
+def admin_announce():
+    return render_main('announce', is_admin=True)
+
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
-    if is_admin_logged_in():
+    if request.method == 'GET' and session.get('is_admin'):
         return redirect(url_for('admin_dashboard'))
 
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '')
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-            session['admin'] = True
+        username = request.form['username']
+        password = request.form['password']
+        if username == ADMIN_USER and password == ADMIN_PASS:
+            session['is_admin'] = True
             return redirect(url_for('admin_dashboard'))
-        return render_shell('login', view_type='login', error='Invalid username or password.')
+        return render_main('login', is_admin=False, login_error='Invalid credentials')
 
-    return render_shell('login', view_type='login')
+    return render_main('login', is_admin=False)
+
 
 @app.route('/admin/logout')
 def admin_logout():
-    session.clear()
+    session.pop('is_admin', None)
     return redirect(url_for('main_home'))
 
-@app.route('/admin/dashboard')
-def admin_dashboard():
-    guard = require_admin()
-    if guard:
-        return guard
-    return render_shell('dashboard')
-
-@app.route('/admin/children')
-def admin_children():
-    guard = require_admin()
-    if guard:
-        return guard
-    return render_shell('children')
-
-@app.route('/admin/parents')
-def admin_parents():
-    guard = require_admin()
-    if guard:
-        return guard
-    return render_shell('parents')
-
-@app.route('/admin/clearance')
-def admin_clearance():
-    guard = require_admin()
-    if guard:
-        return guard
-    return render_shell('clearance')
-
-@app.route('/admin/feeding')
-def admin_feeding():
-    guard = require_admin()
-    if guard:
-        return guard
-    return render_shell('feeding')
-
-@app.route('/admin/assessment')
-def admin_assessment():
-    guard = require_admin()
-    if guard:
-        return guard
-    return redirect(url_for('index'))
-
-@app.route('/admin/announce')
-def admin_announce():
-    guard = require_admin()
-    if guard:
-        return guard
-    return render_shell('announce_admin')
 
 @app.route('/')
 def index():
