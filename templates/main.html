@@ -1,164 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>{{ page.title }} | NMSCST CDW Portal</title>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NMSCST CDW Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}" />
 </head>
 <body>
-<header class="shell-header">
-  <div class="shell-header__left">
-    <button class="hamburger" id="sidebarToggle" type="button" aria-label="Toggle navigation" aria-expanded="false">☰</button>
-    <div class="shell-title">
-      <h1>NMSCST CDW Portal</h1>
-      <p>Child Development Worker System</p>
-    </div>
-  </div>
-  <div class="shell-header__right">
-    {% if is_admin %}
-      <span class="admin-badge">Admin</span>
-      <a class="logout-link" href="{{ url_for('admin_logout') }}">Logout</a>
-    {% else %}
-      <a class="ghost-button" href="{{ url_for('admin_login') }}">Admin Login</a>
-    {% endif %}
-  </div>
-</header>
+  <div class="sidebar-backdrop" id="backdrop" aria-hidden="true"></div>
 
-<div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
-
-<aside class="sidebar" id="sidebar" aria-label="Main navigation">
-  <div class="sidebar-logo">
-    <span class="sidebar-logo__mark">CDW</span>
-    <span class="sidebar-logo__text">Portal Menu</span>
-  </div>
-
-  <nav class="nav-group" aria-label="Public pages">
-    <p class="nav-label">Public</p>
-    {% for item in public_nav %}
-      <a class="nav-item {% if active_page == item.key %}active{% endif %}" href="{{ item.href }}">
-        <span class="nav-icon">{{ item.icon }}</span>
-        <span>{{ item.label }}</span>
-      </a>
-    {% endfor %}
-  </nav>
-
-  <nav class="nav-group nav-group--admin" aria-label="Admin pages">
-    <p class="nav-label nav-label--divider">── Admin Only ──</p>
-    {% if is_admin %}
-      {% for item in admin_nav %}
-        <a class="nav-item {% if active_page == item.key %}active{% endif %}" href="{{ item.href }}">
-          <span class="nav-icon">{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
-        </a>
-      {% endfor %}
-    {% else %}
-      {% for item in admin_nav %}
-        <span class="nav-item nav-item--locked" aria-disabled="true">
-          <span class="nav-icon">{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
-        </span>
-      {% endfor %}
-    {% endif %}
-  </nav>
-</aside>
-
-<main class="content-shell">
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      <div class="flash-stack" role="status">
-        {% for message in messages %}<div class="flash-message">{{ message }}</div>{% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
-
-  {% if view_type == 'home' %}
-    <section class="welcome-banner">
-      <div>
-        <p class="eyebrow">NMSCST Child Development Worker System</p>
-        <h2>Welcome to the CDW Portal</h2>
-        <p>A system for Child Development Workers to manage nutritional assessments, enrollment clearance, and feeding programs.</p>
-      </div>
-    </section>
-
-    <section class="cta-grid" aria-label="Primary actions">
-      <a class="cta-card" href="{{ url_for('lookup') }}">
-        <span class="cta-icon">🔍</span>
-        <div>
-          <h3>Check Child Status</h3>
-          <p>For parents and guardians looking up child status updates.</p>
-        </div>
-      </a>
-      {% if not is_admin %}
-        <a class="cta-card" href="{{ url_for('admin_login') }}">
-          <span class="cta-icon">🔐</span>
-          <div>
-            <h3>Admin Login</h3>
-            <p>For CDWs managing assessments, clearances, and programs.</p>
-          </div>
-        </a>
+  <header>
+    <button id="hamburger" type="button" aria-label="Toggle navigation">☰</button>
+    <span class="sys-name">NMSCST CDW Portal</span>
+    <span class="sys-sub">Child Development Worker System</span>
+    <div class="hdr-right">
+      {% if is_admin %}
+        <span class="admin-badge">● Admin</span>
+        <a href="/admin/logout" class="btn-logout">Logout</a>
+      {% else %}
+        <a href="/admin/login" class="btn-login">Admin Login</a>
       {% endif %}
-    </section>
+    </div>
+  </header>
 
-    <section class="info-grid" aria-label="Public information">
-      <article class="info-card">
-        <span class="info-icon">🍱</span>
-        <h3>About the Feeding Program</h3>
-        <p>View general program details and upcoming beneficiary support information.</p>
-      </article>
-      <article class="info-card">
-        <span class="info-icon">✅</span>
-        <h3>Enrollment Requirements</h3>
-        <p>Review the common documents and steps needed for enrollment clearance.</p>
-      </article>
-      <article class="info-card">
-        <span class="info-icon">📅</span>
-        <h3>Contact / Schedule</h3>
-        <p>Find public schedule reminders and contact information for CDW services.</p>
-      </article>
-    </section>
-  {% elif view_type == 'login' %}
-    <section class="login-card" aria-labelledby="login-title">
-      <div class="login-logo">🌱</div>
-      <h2 id="login-title">Admin Login</h2>
-      <p class="login-subtitle">Sign in to access CDW administration pages.</p>
-      <form method="post" action="{{ url_for('admin_login') }}" class="login-form">
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" autocomplete="username" required autofocus/>
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" required/>
-        {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
-        <button type="submit">Login</button>
-      </form>
-    </section>
-  {% else %}
-    <section class="placeholder-card" aria-labelledby="placeholder-title">
-      <div class="placeholder-icon">{{ page.icon }}</div>
-      <h2 id="placeholder-title">{{ page.title }}</h2>
-      <p>This page is under construction. Coming soon.</p>
-      <span class="access-label {{ 'access-label--admin' if page.access == 'Admin-only' else '' }}">{{ page.access }}</span>
-    </section>
-  {% endif %}
-</main>
+  <nav class="sidebar" aria-label="Portal navigation">
+    <a href="/main" class="nav-item {% if page=='home' %}active{% endif %}"><span class="nav-icon">🏠</span><span>Home</span></a>
+    <a href="/lookup" class="nav-item {% if page=='lookup' %}active{% endif %}"><span class="nav-icon">🔍</span><span>Child Status Lookup</span></a>
+    <a href="/announcements" class="nav-item {% if page=='announcements' %}active{% endif %}"><span class="nav-icon">📢</span><span>Announcements</span></a>
 
-<script>
-  const toggle = document.getElementById('sidebarToggle');
-  const sidebar = document.getElementById('sidebar');
-  const backdrop = document.getElementById('sidebarBackdrop');
+    {% if is_admin %}
+    <div class="nav-divider">── Admin Only ──</div>
+    <a href="/admin/dashboard" class="nav-item {% if page=='dashboard' %}active{% endif %}"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+    <a href="/admin/children" class="nav-item {% if page=='children' %}active{% endif %}"><span class="nav-icon">👶</span><span>Children Database</span></a>
+    <a href="/admin/parents" class="nav-item {% if page=='parents' %}active{% endif %}"><span class="nav-icon">👨‍👩‍👧</span><span>Parent Database</span></a>
+    <a href="/admin/clearance" class="nav-item {% if page=='clearance' %}active{% endif %}"><span class="nav-icon">✅</span><span>Enrollment Clearance</span></a>
+    <a href="/admin/feeding" class="nav-item {% if page=='feeding' %}active{% endif %}"><span class="nav-icon">🍱</span><span>Feeding Program</span></a>
+    <a href="/admin/assessment" class="nav-item"><span class="nav-icon">📋</span><span>Nutritional Assessment ↗</span></a>
+    <a href="/admin/announce" class="nav-item {% if page=='announce' %}active{% endif %}"><span class="nav-icon">📣</span><span>Announcements Manager</span></a>
+    {% endif %}
+  </nav>
 
-  function setSidebar(open) {
-    sidebar.classList.toggle('open', open);
-    backdrop.hidden = !open;
-    toggle.setAttribute('aria-expanded', String(open));
-    document.body.classList.toggle('sidebar-open', open);
-  }
+  <main>
+    {% if page == 'home' %}
+      <section class="welcome-banner">
+        <h1>Welcome to the CDW Portal</h1>
+        <p>Access Child Development Worker services, public child status updates, and announcements in one central system.</p>
+      </section>
 
-  toggle.addEventListener('click', () => setSidebar(!sidebar.classList.contains('open')));
-  backdrop.addEventListener('click', () => setSidebar(false));
-  document.querySelectorAll('.nav-item[href]').forEach((link) => {
-    link.addEventListener('click', () => setSidebar(false));
-  });
-</script>
+      <section class="cta-grid" aria-label="Quick actions">
+        <a class="cta-card" href="/lookup">
+          <span class="cta-icon">🔍</span>
+          <h2>Check Child Status</h2>
+          <p>Look up public status updates for registered children.</p>
+        </a>
+        <a class="cta-card" href="{% if is_admin %}/admin/dashboard{% else %}/admin/login{% endif %}">
+          <span class="cta-icon">🔐</span>
+          <h2>{% if is_admin %}Open Dashboard{% else %}Admin Login{% endif %}</h2>
+          <p>{% if is_admin %}Continue to CDW administration tools.{% else %}Sign in to manage CDW records and workflows.{% endif %}</p>
+        </a>
+      </section>
+
+      <section class="info-grid" aria-label="Portal information">
+        <article class="info-card">
+          <h3>Enrollment Clearance</h3>
+          <p>Track enrollment requirements and clearance status for daycare services.</p>
+        </article>
+        <article class="info-card">
+          <h3>Feeding Program</h3>
+          <p>Coordinate feeding program records, eligibility, and public reminders.</p>
+        </article>
+        <article class="info-card">
+          <h3>Nutritional Assessment</h3>
+          <p>Use the existing tracker for BMI, height-for-age, and nutrition monitoring.</p>
+        </article>
+      </section>
+
+    {% elif page == 'login' %}
+      <section class="login-wrap">
+        <div class="login-card">
+          <div class="login-icon">🌱</div>
+          <h1>Admin Login</h1>
+          <p>Sign in to access CDW administration pages.</p>
+          <form action="/admin/login" method="post">
+            {% if login_error %}
+              <div class="error-message">{{ login_error }}</div>
+            {% endif %}
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username" required autofocus />
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required />
+            <button type="submit">Login</button>
+          </form>
+        </div>
+      </section>
+
+    {% elif page == 'lookup' %}
+      <section class="placeholder-wrap">
+        <div class="placeholder-card">
+          <div class="placeholder-icon">🔍</div>
+          <h1>Child Status Lookup</h1>
+          <p>Public child status lookup tools will appear here soon.</p>
+          <span class="access-badge public">Public</span>
+        </div>
+      </section>
+
+    {% elif page == 'announcements' %}
+      <section class="placeholder-wrap">
+        <div class="placeholder-card">
+          <div class="placeholder-icon">📢</div>
+          <h1>Announcements</h1>
+          <p>Public CDW announcements and reminders will appear here soon.</p>
+          <span class="access-badge public">Public</span>
+        </div>
+      </section>
+
+    {% elif page == 'dashboard' %}
+      <section class="placeholder-wrap">
+        <div class="placeholder-card">
+          <div class="placeholder-icon">📊</div>
+          <h1>Dashboard</h1>
+          <p>Administrative dashboard widgets will appear here soon.</p>
+          <span class="access-badge admin">Admin Only</span>
+        </div>
+      </section>
+
+    {% elif page == 'children' %}
+      <section class="placeholder-wrap">
+        <div class="placeholder-card">
+          <div class="placeholder-icon">👶</div>
+          <h1>Children Database</h1>
+          <p>Children database management tools will appear here soon.</p>
+          <span class="access-badge admin">Admin Only</span>
+        </div>
+      </section>
+
+    {% elif page == 'parents' %}
+      <section class="placeholder-wrap">
+        <div class="placeholder-card">
+          <div class="placeholder-icon">👨‍👩‍👧</div>
+          <h1>Parent Database</h1>
+          <p>Parent and guardian database tools will appear here soon.</p>
+          <span class="access-badge admin">Admin Only</span>
+        </div>
+      </section>
+
+    {% elif page == 'clearance' %}
+      <section class="placeholder-wrap">
+        <div class="placeholder-card">
+          <div class="placeholder-icon">✅</div>
+          <h1>Enrollment Clearance</h1>
+          <p>Enrollment clearance workflows will appear here soon.</p>
+          <span class="access-badge admin">Admin Only</span>
+        </div>
+      </section>
+
+    {% elif page == 'feeding' %}
+      <section class="placeholder-wrap">
+        <div class="placeholder-card">
+          <div class="placeholder-icon">🍱</div>
+          <h1>Feeding Program</h1>
+          <p>Feeding program administration tools will appear here soon.</p>
+          <span class="access-badge admin">Admin Only</span>
+        </div>
+      </section>
+
+    {% elif page == 'announce' %}
+      <section class="placeholder-wrap">
+        <div class="placeholder-card">
+          <div class="placeholder-icon">📣</div>
+          <h1>Announcements Manager</h1>
+          <p>Administrative announcement publishing tools will appear here soon.</p>
+          <span class="access-badge admin">Admin Only</span>
+        </div>
+      </section>
+    {% endif %}
+  </main>
+
+  <script>
+    document.getElementById('hamburger').addEventListener('click', () => {
+      document.body.classList.toggle('sidebar-open');
+    });
+
+    document.getElementById('backdrop').addEventListener('click', () => {
+      document.body.classList.remove('sidebar-open');
+    });
+  </script>
 </body>
 </html>
