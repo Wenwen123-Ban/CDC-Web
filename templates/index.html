@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Child Nutritional Status Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='Styles/main.css') }}"/>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-icon">🌱</div>
+  <div>
+    <h1>Child Nutritional Status Tracker</h1>
+    <p>WHO Growth Standards · Official Form Format · Feeding Program Flagging</p>
+  </div>
+  <div class="hdr-right">
+    <span class="poll-wrap"><span class="poll-dot" id="pdot"></span>Live sync</span>
+    <span class="ss" id="ss">● Ready</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="sc" style="--c:#2d9e5f"><div class="n" id="st-total">0</div><div class="l">Total Children</div></div>
+    <div class="sc" style="--c:#e53e3e"><div class="n" id="st-flag">0</div><div class="l">Needs Feeding</div></div>
+    <div class="sc" style="--c:#2d9e5f"><div class="n" id="st-normal">0</div><div class="l">All Normal</div></div>
+    <div class="sc" style="--c:#f5a623"><div class="n" id="st-stunted">0</div><div class="l">Stunted/Tall</div></div>
+    <div class="sc" style="--c:#805ad5"><div class="n" id="st-wasted">0</div><div class="l">Wasted</div></div>
+  </div>
+
+  <!-- FORM -->
+  <div class="panel" id="fpanel">
+    <div class="ph" id="fph">➕ Add Child Record</div>
+    <div class="pb">
+
+      <div class="ebanner" id="ebanner">
+        ✏️ <span id="ebtxt">Editing record</span> — change only what needs fixing, then click Save Changes.
+        <button class="btn-s" style="margin-left:auto;padding:5px 12px;font-size:11px" onclick="cancelEdit()">✕ Cancel</button>
+      </div>
+
+      <!-- ROW 1: Name + Sex -->
+      <div class="fg" style="grid-template-columns:3fr 1fr 1fr 1fr;margin-bottom:12px;">
+        <div class="f">
+          <label>Name of Beneficiary (Last Name, First Name, Middle Name, Ext)</label>
+          <input type="text" id="f-name" placeholder="e.g. DELA CRUZ, JUAN, SANTOS, JR."/>
+        </div>
+        <div class="f">
+          <label>Sex (M/F)</label>
+          <select id="f-sex">
+            <option value="">-- Select --</option>
+            <option value="M">Male (M)</option>
+            <option value="F">Female (F)</option>
+          </select>
+        </div>
+        <div class="f">
+          <label>Date of Birth (mm/dd/yyyy)</label>
+          <input type="date" id="f-dob"/>
+        </div>
+        <div class="f">
+          <label>Household ID (4Ps, if any)</label>
+          <input type="text" id="f-hhid" placeholder="e.g. 112233 or N/A"/>
+        </div>
+      </div>
+
+      <!-- ROW 2: Flags -->
+      <div class="fg fg-5" style="margin-bottom:12px;">
+        <div class="f">
+          <label>Child w/ Disability / Medical Condition</label>
+          <div class="tg">
+            <button class="tb active" id="dis-no"  onclick="setToggle('dis','no')">No</button>
+            <button class="tb"        id="dis-yes" onclick="setToggle('dis','yes')">Yes</button>
+          </div>
+        </div>
+        <div class="f">
+          <label>Indigenous People / Preschool Child</label>
+          <div class="tg">
+            <button class="tb active" id="ind-no"  onclick="setToggle('ind','no')">No</button>
+            <button class="tb"        id="ind-yes" onclick="setToggle('ind','yes')">Yes</button>
+          </div>
+        </div>
+        <div class="f">
+          <label>With Solo Parent</label>
+          <div class="tg">
+            <button class="tb active" id="sol-no"  onclick="setToggle('sol','no')">No</button>
+            <button class="tb"        id="sol-yes" onclick="setToggle('sol','yes')">Yes</button>
+          </div>
+        </div>
+        <div class="f">
+          <label>Dewormed (mm/dd/yyyy)</label>
+          <input type="date" id="f-dew" title="Leave blank if not dewormed"/>
+        </div>
+        <div class="f">
+          <label>Vit A (mm/dd/yyyy)</label>
+          <input type="date" id="f-vita" title="Leave blank if not given"/>
+        </div>
+      </div>
+
+      <!-- ROW 3: Weighing + Measurements -->
+      <div class="fg fg-4" style="margin-bottom:14px;">
+        <div class="f">
+          <label>Actual Date of Weighing (mm/dd/yyyy)</label>
+          <input type="date" id="f-refdate" value="2025-06-24"/>
+        </div>
+        <div class="f">
+          <label>Weight (KG)</label>
+          <input type="number" id="f-weight" placeholder="12.5" step="0.1" min="1" max="50"/>
+        </div>
+        <div class="f">
+          <label>Height (CM)</label>
+          <input type="number" id="f-height" placeholder="89" step="0.1" min="40" max="130"/>
+        </div>
+        <div class="f" style="display:flex;flex-direction:column;justify-content:flex-end;">
+          <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Age in Mos / Yrs</div>
+          <div id="age-display" style="padding:8px 11px;background:var(--pl);border-radius:7px;font-size:13px;font-weight:800;color:var(--primary);">— / —</div>
+        </div>
+      </div>
+
+      <!-- LIVE PREVIEW -->
+      <div class="prev" id="prev">
+        <div class="pi"><div class="pil">Age in Months</div><div class="piv" id="pv-age">—</div></div>
+        <div class="pi"><div class="pil">Age in Years</div><div class="piv" id="pv-yrs">—</div></div>
+        <div class="pi"><div class="pil">Weight-for-Age</div><div class="piv" id="pv-waz">—</div></div>
+        <div class="pi"><div class="pil">Height-for-Age</div><div class="piv" id="pv-haz">—</div></div>
+        <div class="pi"><div class="pil">Weight-for-Height</div><div class="piv" id="pv-whz">—</div></div>
+      </div>
+
+      <div class="brow">
+        <button class="btn-p" id="btn-sub" onclick="submitForm()">✔ Add to List</button>
+        <button class="btn-s" onclick="cancelEdit()">✕ Clear</button>
+        <span id="ferr" style="font-size:11px;color:var(--red);font-weight:700;display:none"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="panel">
+    <div class="ph">📋 Children Records</div>
+    <div class="pb">
+
+      <div class="fbar">
+        <input type="text" id="sbox" placeholder="🔍 Search by name…" oninput="renderTable()"/>
+        <button class="fc active" id="chip-all"    onclick="setFilter('all')">All</button>
+        <button class="fc"        id="chip-flag"   onclick="setFilter('flag')">⚠ Needs Feeding</button>
+        <button class="fc"        id="chip-normal" onclick="setFilter('normal')">✓ All Normal</button>
+      </div>
+
+      <div class="ebar">
+        <div class="rc">Showing <span id="rc">0</span> of <span id="rt">0</span> records</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <button class="btn-s" onclick="exportCSV()">⬇ Export CSV</button>
+          <button class="btn-d" onclick="confirmClearAll()">🗑 Clear All</button>
+        </div>
+      </div>
+
+      <div class="tw" style="margin-top:11px">
+        <table>
+          <thead>
+            <!-- group headers -->
+            <tr>
+              <th class="th-group" rowspan="2">#</th>
+              <th class="th-group" colspan="4">BENEFICIARY INFORMATION</th>
+              <th class="th-group" colspan="3">CLASSIFICATION FLAGS</th>
+              <th class="th-group" colspan="2">SUPPLEMENTATION</th>
+              <th class="th-group" colspan="3">MEASUREMENTS</th>
+              <th class="th-group" colspan="2">AGE</th>
+              <th class="th-group" colspan="3">NUTRITIONAL STATUS</th>
+              <th class="th-group" rowspan="2">FLAG</th>
+              <th class="th-group" rowspan="2">ACTIONS</th>
+            </tr>
+            <tr>
+              <th>Name of Beneficiary<br/>(Last, First, Middle, Ext)</th>
+              <th>Sex<br/>(M/F)</th>
+              <th>Date of Birth<br/>(mm/dd/yyyy)</th>
+              <th>Household ID<br/>(4Ps)</th>
+              <th>Child w/ Disability/<br/>Medical Condition</th>
+              <th>Indigenous/<br/>Preschool</th>
+              <th>With Solo<br/>Parent</th>
+              <th>Dewormed<br/>(mm/dd/yyyy)</th>
+              <th>Vit A<br/>(mm/dd/yyyy)</th>
+              <th>Date of<br/>Weighing</th>
+              <th>Weight<br/>(KG)</th>
+              <th>Height<br/>(CM)</th>
+              <th>Age in<br/>Mos</th>
+              <th>Age in<br/>Yrs</th>
+              <th>Weight-for-Age<br/>(Underweight)</th>
+              <th>Height-for-Age<br/>(Stunting)</th>
+              <th>Weight-for-Height/<br/>Length (Wasting)</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="20">
+              <div class="empty"><div class="ei">⏳</div><p>Loading records…</p></div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script src="{{ url_for('static', filename='Script/main.js') }}"></script>
+</body>
+</html>
