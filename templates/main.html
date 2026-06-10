@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>{{ page.title }} | NMSCST CDW Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}"/>
+</head>
+<body>
+<header class="shell-header">
+  <div class="shell-header__left">
+    <button class="hamburger" id="sidebarToggle" type="button" aria-label="Toggle navigation" aria-expanded="false">☰</button>
+    <div class="shell-title">
+      <h1>NMSCST CDW Portal</h1>
+      <p>Child Development Worker System</p>
+    </div>
+  </div>
+  <div class="shell-header__right">
+    {% if is_admin %}
+      <span class="admin-badge">Admin</span>
+      <a class="logout-link" href="{{ url_for('admin_logout') }}">Logout</a>
+    {% else %}
+      <a class="ghost-button" href="{{ url_for('admin_login') }}">Admin Login</a>
+    {% endif %}
+  </div>
+</header>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+
+<aside class="sidebar" id="sidebar" aria-label="Main navigation">
+  <div class="sidebar-logo">
+    <span class="sidebar-logo__mark">CDW</span>
+    <span class="sidebar-logo__text">Portal Menu</span>
+  </div>
+
+  <nav class="nav-group" aria-label="Public pages">
+    <p class="nav-label">Public</p>
+    {% for item in public_nav %}
+      <a class="nav-item {% if active_page == item.key %}active{% endif %}" href="{{ item.href }}">
+        <span class="nav-icon">{{ item.icon }}</span>
+        <span>{{ item.label }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  <nav class="nav-group nav-group--admin" aria-label="Admin pages">
+    <p class="nav-label nav-label--divider">── Admin Only ──</p>
+    {% if is_admin %}
+      {% for item in admin_nav %}
+        <a class="nav-item {% if active_page == item.key %}active{% endif %}" href="{{ item.href }}">
+          <span class="nav-icon">{{ item.icon }}</span>
+          <span>{{ item.label }}</span>
+        </a>
+      {% endfor %}
+    {% else %}
+      {% for item in admin_nav %}
+        <span class="nav-item nav-item--locked" aria-disabled="true">
+          <span class="nav-icon">{{ item.icon }}</span>
+          <span>{{ item.label }}</span>
+        </span>
+      {% endfor %}
+    {% endif %}
+  </nav>
+</aside>
+
+<main class="content-shell">
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <div class="flash-stack" role="status">
+        {% for message in messages %}<div class="flash-message">{{ message }}</div>{% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% if view_type == 'home' %}
+    <section class="welcome-banner">
+      <div>
+        <p class="eyebrow">NMSCST Child Development Worker System</p>
+        <h2>Welcome to the CDW Portal</h2>
+        <p>A system for Child Development Workers to manage nutritional assessments, enrollment clearance, and feeding programs.</p>
+      </div>
+    </section>
+
+    <section class="cta-grid" aria-label="Primary actions">
+      <a class="cta-card" href="{{ url_for('lookup') }}">
+        <span class="cta-icon">🔍</span>
+        <div>
+          <h3>Check Child Status</h3>
+          <p>For parents and guardians looking up child status updates.</p>
+        </div>
+      </a>
+      {% if not is_admin %}
+        <a class="cta-card" href="{{ url_for('admin_login') }}">
+          <span class="cta-icon">🔐</span>
+          <div>
+            <h3>Admin Login</h3>
+            <p>For CDWs managing assessments, clearances, and programs.</p>
+          </div>
+        </a>
+      {% endif %}
+    </section>
+
+    <section class="info-grid" aria-label="Public information">
+      <article class="info-card">
+        <span class="info-icon">🍱</span>
+        <h3>About the Feeding Program</h3>
+        <p>View general program details and upcoming beneficiary support information.</p>
+      </article>
+      <article class="info-card">
+        <span class="info-icon">✅</span>
+        <h3>Enrollment Requirements</h3>
+        <p>Review the common documents and steps needed for enrollment clearance.</p>
+      </article>
+      <article class="info-card">
+        <span class="info-icon">📅</span>
+        <h3>Contact / Schedule</h3>
+        <p>Find public schedule reminders and contact information for CDW services.</p>
+      </article>
+    </section>
+  {% elif view_type == 'login' %}
+    <section class="login-card" aria-labelledby="login-title">
+      <div class="login-logo">🌱</div>
+      <h2 id="login-title">Admin Login</h2>
+      <p class="login-subtitle">Sign in to access CDW administration pages.</p>
+      <form method="post" action="{{ url_for('admin_login') }}" class="login-form">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" required autofocus/>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required/>
+        {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+        <button type="submit">Login</button>
+      </form>
+    </section>
+  {% else %}
+    <section class="placeholder-card" aria-labelledby="placeholder-title">
+      <div class="placeholder-icon">{{ page.icon }}</div>
+      <h2 id="placeholder-title">{{ page.title }}</h2>
+      <p>This page is under construction. Coming soon.</p>
+      <span class="access-label {{ 'access-label--admin' if page.access == 'Admin-only' else '' }}">{{ page.access }}</span>
+    </section>
+  {% endif %}
+</main>
+
+<script>
+  const toggle = document.getElementById('sidebarToggle');
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+
+  function setSidebar(open) {
+    sidebar.classList.toggle('open', open);
+    backdrop.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    document.body.classList.toggle('sidebar-open', open);
+  }
+
+  toggle.addEventListener('click', () => setSidebar(!sidebar.classList.contains('open')));
+  backdrop.addEventListener('click', () => setSidebar(false));
+  document.querySelectorAll('.nav-item[href]').forEach((link) => {
+    link.addEventListener('click', () => setSidebar(false));
+  });
+</script>
+</body>
+</html>
